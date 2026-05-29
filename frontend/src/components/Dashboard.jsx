@@ -2,15 +2,20 @@ import { useState, useEffect } from "react";
 import { Shield, AlertTriangle, Activity, Zap, Eye, Lock } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const threatData = [
-  { time: "00:00", threats: 12, blocked: 10 },
-  { time: "04:00", threats: 28, blocked: 25 },
-  { time: "08:00", threats: 45, blocked: 40 },
-  { time: "12:00", threats: 78, blocked: 70 },
-  { time: "16:00", threats: 56, blocked: 52 },
-  { time: "20:00", threats: 89, blocked: 85 },
-  { time: "24:00", threats: 34, blocked: 30 },
-];
+const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+const generateChartData = () =>
+  ["00:00","04:00","08:00","12:00","16:00","20:00","24:00"].map(time => ({
+    time,
+    threats: randomBetween(10, 100),
+    blocked: randomBetween(8, 90),
+  }));
+
+const randomIP = () => `${randomBetween(1,255)}.${randomBetween(1,255)}.${randomBetween(1,255)}.${randomBetween(1,255)}`;
+const threatTypes = ["SQL Injection", "DDoS Attack", "Phishing", "Brute Force", "Ransomware", "XSS Attack"];
+const countries = ["Russia", "China", "Iran", "Brazil", "Romania", "USA"];
+const risks = ["CRITICAL", "HIGH", "MEDIUM"];
+const randomItem = arr => arr[Math.floor(Math.random() * arr.length)];
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -22,51 +27,51 @@ function Dashboard() {
     systems_secure: 99.1
   });
 
-  const [threats, setThreats] = useState([
-    { type: "SQL Injection", ip: "192.168.1.45", risk: "HIGH" },
-    { type: "DDoS Attack", ip: "103.21.244.0", risk: "CRITICAL" },
-    { type: "Phishing Attempt", ip: "185.220.101.5", risk: "MEDIUM" },
-    { type: "Brute Force", ip: "45.33.32.156", risk: "HIGH" },
-  ]);
+  const [threats, setThreats] = useState(
+    Array.from({ length: 4 }, (_, i) => ({
+      id: i,
+      type: randomItem(threatTypes),
+      ip: randomIP(),
+      country: randomItem(countries),
+      risk: randomItem(risks),
+    }))
+  );
+
+  const [chartData, setChartData] = useState(generateChartData());
 
   useEffect(() => {
-    const fetchStats = () => {
-      fetch('http://localhost:5000/api/stats')
-        .then(r => r.json())
-        .then(data => setStats(data))
-        .catch(() => console.log('Backend offline'));
-    };
-
-    const fetchThreats = () => {
-      fetch('http://localhost:5000/api/threats')
-        .then(r => r.json())
-        .then(data => setThreats(data.slice(0, 4)))
-        .catch(() => console.log('Backend offline'));
-    };
-
-    fetchStats();
-    fetchThreats();
-
     const interval = setInterval(() => {
-      fetchStats();
-      fetchThreats();
+      setStats({
+        threats_detected: randomBetween(1200, 1500),
+        attacks_blocked: randomBetween(1100, 1400),
+        ai_accuracy: parseFloat((Math.random() * 2 + 97).toFixed(1)),
+        active_monitors: randomBetween(300, 400),
+        response_time: parseFloat((Math.random() * 0.4 + 0.1).toFixed(1)),
+        systems_secure: parseFloat((Math.random() * 1 + 98.5).toFixed(1)),
+      });
+      setThreats(Array.from({ length: 4 }, (_, i) => ({
+        id: i,
+        type: randomItem(threatTypes),
+        ip: randomIP(),
+        country: randomItem(countries),
+        risk: randomItem(risks),
+      })));
+      setChartData(generateChartData());
     }, 3000);
-
     return () => clearInterval(interval);
   }, []);
 
   const statCards = [
-    { label: "Threats Detected", value: stats.threats_detected?.toLocaleString(), color: "red", icon: AlertTriangle },
-    { label: "Attacks Blocked", value: stats.attacks_blocked?.toLocaleString(), color: "cyan", icon: Shield },
+    { label: "Threats Detected", value: stats.threats_detected.toLocaleString(), color: "red", icon: AlertTriangle },
+    { label: "Attacks Blocked", value: stats.attacks_blocked.toLocaleString(), color: "cyan", icon: Shield },
     { label: "AI Accuracy", value: `${stats.ai_accuracy}%`, color: "green", icon: Activity },
-    { label: "Active Monitors", value: stats.active_monitors?.toString(), color: "purple", icon: Eye },
+    { label: "Active Monitors", value: stats.active_monitors.toString(), color: "purple", icon: Eye },
     { label: "Response Time", value: `${stats.response_time}ms`, color: "yellow", icon: Zap },
     { label: "Systems Secure", value: `${stats.systems_secure}%`, color: "cyan", icon: Lock },
   ];
 
   return (
     <div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {statCards.map((stat, i) => {
@@ -91,21 +96,19 @@ function Dashboard() {
           📊 LIVE THREAT ACTIVITY — LAST 24 HOURS
         </h2>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={threatData}>
+          <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1a2035" />
             <XAxis dataKey="time" stroke="#4a5568" />
             <YAxis stroke="#4a5568" />
             <Tooltip contentStyle={{ backgroundColor: "#0a0f1f", border: "1px solid #22d3ee" }} />
-            <Area type="monotone" dataKey="threats" stroke="#ef4444" fill="#ef444420" strokeWidth={2} />
-            <Area type="monotone" dataKey="blocked" stroke="#22d3ee" fill="#22d3ee20" strokeWidth={2} />
+            <Area type="monotone" dataKey="threats" stroke="#ef4444" fill="#ef444420" strokeWidth={2} name="Threats" />
+            <Area type="monotone" dataKey="blocked" stroke="#22d3ee" fill="#22d3ee20" strokeWidth={2} name="Blocked" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
       {/* Bottom */}
       <div className="grid grid-cols-2 gap-6">
-
-        {/* Live Threats */}
         <div className="bg-[#0a0f1f] border border-red-900 rounded-2xl p-6">
           <h2 className="text-red-400 font-bold text-lg mb-4 tracking-wider">
             🔴 LIVE THREATS
@@ -115,12 +118,11 @@ function Dashboard() {
               <div key={i} className="flex justify-between items-center border border-red-900 rounded-xl p-3">
                 <div>
                   <p className="text-white font-bold text-sm">{threat.type}</p>
-                  <p className="text-gray-500 text-xs">{threat.ip} • {threat.country || "Unknown"}</p>
+                  <p className="text-gray-500 text-xs">{threat.ip} • {threat.country}</p>
                 </div>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full text-white ${
                   threat.risk === "CRITICAL" ? "bg-red-500" :
-                  threat.risk === "HIGH" ? "bg-orange-500" :
-                  "bg-yellow-500"
+                  threat.risk === "HIGH" ? "bg-orange-500" : "bg-yellow-500"
                 }`}>
                   {threat.risk}
                 </span>
@@ -129,7 +131,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* System Status */}
         <div className="bg-[#0a0f1f] border border-cyan-900 rounded-2xl p-6">
           <h2 className="text-cyan-400 font-bold text-lg mb-4 tracking-wider">
             ⚡ SYSTEM STATUS
@@ -137,8 +138,8 @@ function Dashboard() {
           <div className="space-y-4">
             {[
               { name: "Firewall", status: "ACTIVE", pct: 100, color: "green" },
-              { name: "AI Engine", status: "RUNNING", pct: Math.round(stats.ai_accuracy || 98), color: "cyan" },
-              { name: "Threat Scanner", status: "SCANNING", pct: 87, color: "yellow" },
+              { name: "AI Engine", status: "RUNNING", pct: Math.round(stats.ai_accuracy), color: "cyan" },
+              { name: "Threat Scanner", status: "SCANNING", pct: randomBetween(80, 95), color: "yellow" },
               { name: "Encryption", status: "ENABLED", pct: 100, color: "purple" },
             ].map((sys, i) => (
               <div key={i}>
@@ -147,16 +148,12 @@ function Dashboard() {
                   <span className={`text-${sys.color}-400 text-xs font-bold`}>{sys.status}</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
-                  <div
-                    className={`bg-${sys.color}-400 h-2 rounded-full transition-all`}
-                    style={{ width: `${sys.pct}%` }}
-                  ></div>
+                  <div className={`bg-${sys.color}-400 h-2 rounded-full`} style={{ width: `${sys.pct}%` }}></div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );
